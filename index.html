@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="わかちゃん健康手帳">
+<meta name="theme-color" content="#f48fb1">
+<title>わかちゃん健康手帳</title>
+<style>
+:root{
+  --pink:    #f48fb1;
+  --pink-dk: #e91e8c;
+  --pink-lt: #fce4ec;
+  --purple:  #ce93d8;
+  --purple-dk:#9c27b0;
+  --yellow:  #fff9c4;
+  --green:   #a5d6a7;
+  --bg:      #fff;
+  --bg-lt:   #fdf6fb;
+  --bdr:     #f8bbd0;
+  --text-dk: #4a148c;
+  --text-md: #7b1fa2;
+  --text-lt: #ab47bc;
+  --amber:   #ff8f00;
+  --radius:  16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Marugo ProN','Hiragino Sans',sans-serif;
+     background:linear-gradient(160deg,#fce4ec 0%,#f3e5f5 50%,#e8eaf6 100%);
+     min-height:100vh;color:var(--text-dk);}
+
+/* ── ヘッダー ── */
+header{background:linear-gradient(135deg,#f06292 0%,#ce93d8 60%,#9fa8da 100%);
+       padding:.9rem 1rem;display:flex;align-items:center;gap:.75rem;
+       box-shadow:0 3px 12px rgba(240,98,146,.35);}
+.hdr-icon{font-size:2rem;line-height:1;}
+.hdr-title{color:#fff;font-size:1.1rem;font-weight:800;letter-spacing:.02em;
+           text-shadow:0 1px 4px rgba(0,0,0,.15);}
+.hdr-sub{color:rgba(255,255,255,.85);font-size:.72rem;margin-top:.1rem;}
+.hdr-date{margin-left:auto;color:rgba(255,255,255,.9);font-size:.72rem;text-align:right;}
+
+/* ── タブ ── */
+.tab-bar{display:flex;background:#fff;border-bottom:2px solid var(--bdr);
+         position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(244,143,177,.15);}
+.tab-btn{flex:1;padding:.6rem .2rem;font-size:.72rem;font-weight:700;
+         border:none;background:none;cursor:pointer;color:var(--text-lt);
+         border-bottom:3px solid transparent;transition:all .15s;}
+.tab-btn.active{color:var(--pink-dk);border-bottom-color:var(--pink-dk);}
+
+/* ── コンテンツ ── */
+main{padding:.85rem;max-width:600px;margin:0 auto;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* ── カード ── */
+.card{background:var(--bg);border-radius:var(--radius);
+      padding:.9rem 1rem;margin-bottom:.85rem;
+      box-shadow:0 2px 12px rgba(244,143,177,.13);
+      border:1.5px solid var(--bdr);}
+.card-title{font-size:.8rem;font-weight:800;color:var(--text-md);
+            margin-bottom:.7rem;display:flex;align-items:center;gap:.4rem;}
+
+/* ── フォーム ── */
+.form-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem;flex-wrap:wrap;}
+.form-label{font-size:.75rem;font-weight:700;color:var(--text-md);white-space:nowrap;min-width:5.5rem;}
+.form-input{flex:1;border:1.5px solid var(--bdr);border-radius:10px;
+            padding:.4rem .65rem;font-size:.85rem;font-family:inherit;
+            color:var(--text-dk);background:#fff;min-width:0;}
+.form-input:focus{outline:none;border-color:var(--pink);}
+.form-textarea{width:100%;border:1.5px solid var(--bdr);border-radius:10px;
+               padding:.5rem .65rem;font-size:.82rem;font-family:inherit;
+               color:var(--text-dk);background:#fff;min-height:70px;resize:vertical;}
+.form-textarea:focus{outline:none;border-color:var(--pink);}
+.form-select{flex:1;border:1.5px solid var(--bdr);border-radius:10px;
+             padding:.4rem .65rem;font-size:.82rem;font-family:inherit;
+             color:var(--text-dk);background:#fff;min-width:0;}
+.form-select:focus{outline:none;border-color:var(--pink);}
+
+/* チップ選択 */
+.chip-group{display:flex;flex-wrap:wrap;gap:.4rem;flex:1;}
+.chip{border:1.5px solid var(--bdr);border-radius:20px;padding:.25rem .65rem;
+      font-size:.75rem;font-weight:700;color:var(--text-lt);cursor:pointer;
+      background:#fff;transition:all .12s;user-select:none;white-space:nowrap;}
+.chip.active{border-color:var(--pink-dk);background:var(--pink-lt);color:var(--pink-dk);}
+.chip.good.active{border-color:#43a047;background:#e8f5e9;color:#2e7d32;}
+.chip.mid.active{border-color:var(--amber);background:#fff8e1;color:var(--amber);}
+.chip.bad.active{border-color:#e53935;background:#ffebee;color:#c62828;}
+
+/* 送信ボタン */
+.submit-btn{width:100%;padding:.75rem;border:none;border-radius:var(--radius);
+            background:linear-gradient(135deg,#f06292,#ce93d8);
+            color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;
+            box-shadow:0 3px 10px rgba(240,98,146,.35);letter-spacing:.05em;
+            margin-top:.3rem;transition:opacity .15s;}
+.submit-btn:active{opacity:.8;}
+
+/* ── 今日のサマリーカード ── */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;}
+.sum-item{background:var(--bg-lt);border-radius:12px;padding:.55rem .7rem;
+          border:1.5px solid var(--bdr);}
+.sum-lbl{font-size:.65rem;color:var(--text-lt);font-weight:700;margin-bottom:.15rem;}
+.sum-val{font-size:.95rem;font-weight:800;color:var(--text-dk);}
+.sum-val.big{font-size:1.1rem;}
+
+/* 天気バッジ */
+.weather-badge{display:inline-flex;align-items:center;gap:.3rem;
+               background:var(--pink-lt);border-radius:12px;
+               padding:.3rem .7rem;font-size:.8rem;font-weight:700;color:var(--pink-dk);
+               border:1.5px solid var(--bdr);}
+
+/* ── 記録リスト ── */
+.rec-card{background:var(--bg);border-radius:14px;margin-bottom:.6rem;
+          border-left:4px solid var(--pink);cursor:pointer;
+          box-shadow:0 2px 8px rgba(244,143,177,.12);overflow:hidden;}
+.rec-card:active{opacity:.85;}
+.rec-hdr{padding:.65rem .85rem;display:flex;align-items:center;gap:.5rem;}
+.rec-date-lbl{font-size:.78rem;font-weight:800;color:var(--text-dk);flex:1;}
+.rec-chevron{font-size:.72rem;color:var(--text-lt);transition:transform .2s;}
+.rec-card.open .rec-chevron{transform:rotate(180deg);}
+.rec-body{display:none;padding:0 .85rem .75rem;border-top:1px solid var(--bdr);}
+.rec-card.open .rec-body{display:block;}
+.rec-row{display:flex;align-items:baseline;gap:.4rem;margin-top:.45rem;flex-wrap:wrap;}
+.rec-key{font-size:.68rem;color:var(--text-lt);font-weight:700;white-space:nowrap;}
+.rec-val{font-size:.8rem;color:var(--text-dk);font-weight:600;}
+.rec-actions{display:flex;gap:.4rem;margin-top:.65rem;}
+.rec-edit-btn{background:none;border:1.5px solid var(--bdr);border-radius:8px;
+              padding:.2rem .55rem;font-size:.72rem;cursor:pointer;color:var(--text-md);}
+.rec-del-btn{background:none;border:1.5px solid #ffcdd2;border-radius:8px;
+             padding:.2rem .55rem;font-size:.72rem;cursor:pointer;color:#e57373;}
+
+/* ── 天気アイコン取得表示 ── */
+.weather-row{display:flex;align-items:center;gap:.6rem;background:var(--pink-lt);
+             border-radius:12px;padding:.5rem .75rem;margin-bottom:.65rem;
+             border:1.5px solid var(--bdr);}
+.weather-icon{font-size:1.5rem;}
+.weather-info{flex:1;}
+.weather-info .city{font-size:.65rem;color:var(--text-lt);font-weight:700;}
+.weather-info .desc{font-size:.8rem;font-weight:800;color:var(--text-dk);}
+.weather-nums{text-align:right;font-size:.75rem;font-weight:700;color:var(--text-md);}
+
+/* ── グラフエリア ── */
+.chart-wrap{position:relative;height:180px;margin:.5rem 0;}
+
+/* ── empty ── */
+.empty{text-align:center;padding:2rem 1rem;color:var(--text-lt);font-size:.85rem;}
+
+/* ── モーダル ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);
+               z-index:100;overflow-y:auto;padding:1rem;}
+.modal-overlay.open{display:flex;align-items:flex-start;justify-content:center;}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:480px;
+           padding:1.1rem 1rem 1.3rem;margin:auto;
+           box-shadow:0 8px 32px rgba(240,98,146,.25);}
+.modal-title{font-size:.95rem;font-weight:800;color:var(--text-md);
+             margin-bottom:.9rem;text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-icon">🌸</div>
+  <div>
+    <div class="hdr-title">わかちゃん健康手帳</div>
+    <div class="hdr-sub">毎日の体調を記録しよう</div>
+  </div>
+  <div class="hdr-date" id="hdrDate"></div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('today',this)">🌟 今日</button>
+  <button class="tab-btn" onclick="switchTab('record',this)">✏️ 記録</button>
+  <button class="tab-btn" onclick="switchTab('history',this)">📅 履歴</button>
+  <button class="tab-btn" onclick="switchTab('graph',this)">📊 グラフ</button>
+</div>
+
+<main>
+
+<!-- ══ 今日タブ ══ -->
+<div class="tab-content active" id="tab-today">
+  <div class="card">
+    <div class="card-title">🌤️ 今日のお天気（練馬区）</div>
+    <div id="weatherDisplay">
+      <div style="color:var(--text-lt);font-size:.8rem;">読み込み中…</div>
+    </div>
+  </div>
+
+  <div class="card" id="todayCard">
+    <div class="card-title">📋 今日の記録</div>
+    <div id="todaySummary">
+      <div class="empty">まだ今日の記録がありません<br>「✏️ 記録」から入力してね！</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💡 わかちゃんへのメッセージ</div>
+    <div id="messageArea" style="font-size:.85rem;line-height:1.6;color:var(--text-dk);">
+      今日も元気でいてね！🌈
+    </div>
+  </div>
+</div>
+
+<!-- ══ 記録タブ ══ -->
+<div class="tab-content" id="tab-record">
+  <div class="card">
+    <div class="card-title">✏️ 今日の体調を記録する</div>
+
+    <!-- 日付 -->
+    <div class="form-row">
+      <span class="form-label">📅 日付</span>
+      <input class="form-input" type="date" id="fDate">
+    </div>
+
+    <!-- 学校 -->
+    <div class="form-row">
+      <span class="form-label">🏫 学校</span>
+      <div class="chip-group" id="schoolChips">
+        <span class="chip" onclick="selectChip(this,'school','あり')">あり</span>
+        <span class="chip" onclick="selectChip(this,'school','なし')">なし</span>
+        <span class="chip" onclick="selectChip(this,'school','半日')">半日</span>
+      </div>
+    </div>
+
+    <!-- 就寝・起床 -->
+    <div class="form-row">
+      <span class="form-label">🌙 就寝</span>
+      <input class="form-input" type="time" id="fSleep" style="max-width:8rem;">
+      <span class="form-label" style="min-width:4rem;">☀️ 起床</span>
+      <input class="form-input" type="time" id="fWake" style="max-width:8rem;">
+    </div>
+
+    <!-- 血圧 -->
+    <div class="form-row">
+      <span class="form-label">💓 血圧</span>
+      <input class="form-input" type="number" id="fBpSys" placeholder="収縮期" style="max-width:6rem;">
+      <span style="font-size:.8rem;color:var(--text-lt);">/</span>
+      <input class="form-input" type="number" id="fBpDia" placeholder="拡張期" style="max-width:6rem;">
+      <span style="font-size:.75rem;color:var(--text-lt);">mmHg</span>
+    </div>
+
+    <!-- 朝食 -->
+    <div class="form-row">
+      <span class="form-label">🍳 朝食</span>
+      <div class="chip-group" id="breakfastChips">
+        <span class="chip good" onclick="selectChip(this,'breakfast','完食')">完食 😊</span>
+        <span class="chip mid"  onclick="selectChip(this,'breakfast','少し残し')">少し残し 🙂</span>
+        <span class="chip bad"  onclick="selectChip(this,'breakfast','ほぼ残し')">ほぼ残し 😔</span>
+      </div>
+    </div>
+
+    <!-- 朝食メモ -->
+    <div class="form-row" style="align-items:flex-start;">
+      <span class="form-label">🥣 朝食メモ</span>
+      <textarea class="form-textarea" id="fBreakfastMemo" placeholder="例：ごはん、みそ汁、卵焼き…"></textarea>
+    </div>
+
+    <!-- 夕食 -->
+    <div class="form-row">
+      <span class="form-label">🍚 夕食</span>
+      <div class="chip-group" id="dinnerChips">
+        <span class="chip good" onclick="selectChip(this,'dinner','完食')">完食 😊</span>
+        <span class="chip mid"  onclick="selectChip(this,'dinner','少し残し')">少し残し 🙂</span>
+        <span class="chip bad"  onclick="selectChip(this,'dinner','ほぼ残し')">ほぼ残し 😔</span>
+      </div>
+    </div>
+
+    <!-- 本人の様子 -->
+    <div class="form-row" style="align-items:flex-start;">
+      <span class="form-label">💬 様子メモ</span>
+      <textarea class="form-textarea" id="fMemo" placeholder="例：元気だった、少し頭痛あり、機嫌よかった…"></textarea>
+    </div>
+
+    <button class="submit-btn" onclick="submitRecord()">💾 保存する</button>
+  </div>
+</div>
+
+<!-- ══ 履歴タブ ══ -->
+<div class="tab-content" id="tab-history">
+  <div id="historyList">
+    <div class="empty">記録がありません</div>
+  </div>
+</div>
+
+<!-- ══ グラフタブ ══ -->
+<div class="tab-content" id="tab-graph">
+  <div class="card">
+    <div class="card-title">💓 血圧の推移</div>
+    <div class="chart-wrap"><canvas id="bpChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">😊 食事の記録</div>
+    <div class="chart-wrap"><canvas id="mealChart"></canvas></div>
+  </div>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ══════════════════════════════════
+//  定数・状態
+// ══════════════════════════════════
+const STORAGE_KEY = 'wachan_health_log';
+const WEBHOOK_URL = ''; // 後でGoogle Apps Script URLを入れる
+
+const WEEKDAYS = ['日','月','火','水','木','金','土'];
+
+let editingId = null;
+let currentTab = 'today';
+let bpChartInst = null;
+let mealChartInst = null;
+
+// 選択状態
+const selections = { school:'', breakfast:'', dinner:'' };
+
+// ══════════════════════════════════
+//  初期化
+// ══════════════════════════════════
+function fmt(d){ return d.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-'); }
+
+function init() {
+  const now = new Date();
+  // ヘッダー日付
+  document.getElementById('hdrDate').innerHTML =
+    `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}<br>${WEEKDAYS[now.getDay()]}曜日`;
+
+  // フォーム日付デフォルト
+  document.getElementById('fDate').value = fmt(now);
+
+  loadWeather();
+  renderToday();
+}
+
+// ══════════════════════════════════
+//  タブ切り替え
+// ══════════════════════════════════
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+
+  if (tab === 'history') renderHistory();
+  if (tab === 'graph')   renderGraphs();
+  if (tab === 'today')   renderToday();
+}
+
+// ══════════════════════════════════
+//  天気取得（気象庁API 練馬＝東京 130000）
+// ══════════════════════════════════
+const WEATHER_ICONS = {
+  '晴れ':'☀️','晴':'☀️','快晴':'☀️',
+  '曇り':'☁️','曇':'☁️','くもり':'☁️',
+  '雨':'🌧️','小雨':'🌦️','大雨':'🌧️','雷雨':'⛈️',
+  '雪':'❄️','みぞれ':'🌨️',
+};
+
+function getWeatherIcon(desc) {
+  if (!desc) return '🌤️';
+  for (const [k, v] of Object.entries(WEATHER_ICONS)) {
+    if (desc.includes(k)) return v;
+  }
+  return '🌤️';
+}
+
+async function loadWeather() {
+  try {
+    const res  = await fetch('https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json');
+    const data = await res.json();
+    const ts   = data[0].timeSeries;
+
+    // 天気
+    const weatherTs = ts.find(t => t.areas[0]?.weathers);
+    const area = weatherTs?.areas.find(a => a.area.name.includes('東京'));
+    const desc = area?.weathers?.[0]?.replace(/\s+/g,'') || '—';
+    const icon = getWeatherIcon(desc);
+
+    // 気温
+    const tempTs = ts.find(t => t.areas[0]?.temps);
+    const tempArea = tempTs?.areas.find(a => a.area.name.includes('東京'));
+    const temps = tempArea?.temps || [];
+    const tMin  = temps[0] || '—';
+    const tMax  = temps[1] || '—';
+
+    // 降水確率
+    const popTs = ts.find(t => t.areas[0]?.pops);
+    const popArea = popTs?.areas.find(a => a.area.name.includes('練馬')) ||
+                    popTs?.areas[0];
+    const pop = popArea?.pops?.[0] || '—';
+
+    document.getElementById('weatherDisplay').innerHTML = `
+      <div class="weather-row">
+        <div class="weather-icon">${icon}</div>
+        <div class="weather-info">
+          <div class="city">📍 練馬区（東京）</div>
+          <div class="desc">${desc}</div>
+        </div>
+        <div class="weather-nums">
+          🌡️ ${tMin}°〜${tMax}°<br>
+          ☔ ${pop}%
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('weatherDisplay').innerHTML =
+      `<div style="color:var(--text-lt);font-size:.78rem;">天気情報を取得できませんでした</div>`;
+  }
+}
+
+// ══════════════════════════════════
+//  チップ選択
+// ══════════════════════════════════
+function selectChip(el, group, val) {
+  const container = el.closest('.chip-group') || el.parentElement;
+  container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selections[group] = val;
+}
+
+// ══════════════════════════════════
+//  記録保存
+// ══════════════════════════════════
+async function submitRecord() {
+  const date = document.getElementById('fDate').value;
+  if (!date) { alert('日付を入力してください'); return; }
+
+  const rec = {
+    id:       editingId || Date.now(),
+    date,
+    weekday:  WEEKDAYS[new Date(date.replace(/-/g,'/')).getDay()],
+    school:   selections.school,
+    sleep:    document.getElementById('fSleep').value,
+    wake:     document.getElementById('fWake').value,
+    bpSys:    document.getElementById('fBpSys').value,
+    bpDia:    document.getElementById('fBpDia').value,
+    breakfast:     selections.breakfast,
+    breakfastMemo: document.getElementById('fBreakfastMemo').value.trim(),
+    dinner:   selections.dinner,
+    memo:     document.getElementById('fMemo').value.trim(),
+    savedAt:  new Date().toISOString(),
+  };
+
+  // ローカル保存
+  const logs = getLogs();
+  if (editingId) {
+    const idx = logs.findIndex(r => r.id === editingId);
+    if (idx >= 0) logs[idx] = rec; else logs.push(rec);
+  } else {
+    logs.push(rec);
+  }
+  saveLogs(logs);
+  editingId = null;
+
+  // Webhook送信
+  if (WEBHOOK_URL) {
+    try {
+      await fetch(WEBHOOK_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(rec)
+      });
+    } catch(_) {}
+  }
+
+  // フォームリセット
+  resetForm();
+  alert('保存しました！🌸');
+
+  // 今日タブへ
+  document.querySelector('.tab-btn').click();
+}
+
+function resetForm() {
+  document.getElementById('fDate').value = fmt(new Date());
+  ['fSleep','fWake','fBpSys','fBpDia','fBreakfastMemo','fMemo'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['schoolChips','breakfastChips','dinnerChips'].forEach(id => {
+    document.getElementById(id).querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  });
+  Object.keys(selections).forEach(k => selections[k] = '');
+}
+
+// ══════════════════════════════════
+//  ローカルストレージ
+// ══════════════════════════════════
+function getLogs() { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }
+function saveLogs(logs) { localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); }
+
+// ══════════════════════════════════
+//  今日タブ
+// ══════════════════════════════════
+function renderToday() {
+  const today = fmt(new Date());
+  const logs  = getLogs();
+  const rec   = logs.find(r => r.date === today);
+
+  if (!rec) {
+    document.getElementById('todaySummary').innerHTML =
+      '<div class="empty">まだ今日の記録がありません<br>「✏️ 記録」から入力してね！</div>';
+    document.getElementById('messageArea').textContent = '今日も元気でいてね！🌈';
+    return;
+  }
+
+  const mealEmoji = v => v==='完食'?'😊 完食':v==='少し残し'?'🙂 少し残し':v==='ほぼ残し'?'😔 ほぼ残し':'—';
+  const sleepDur = () => {
+    if (!rec.sleep || !rec.wake) return '—';
+    const [sh,sm] = rec.sleep.split(':').map(Number);
+    let [wh,wm] = rec.wake.split(':').map(Number);
+    let mins = (wh*60+wm) - (sh*60+sm);
+    if (mins < 0) mins += 24*60;
+    return `${Math.floor(mins/60)}時間${mins%60}分`;
+  };
+
+  document.getElementById('todaySummary').innerHTML = `
+    <div class="summary-grid">
+      <div class="sum-item">
+        <div class="sum-lbl">🏫 学校</div>
+        <div class="sum-val">${rec.school||'—'}</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">😴 睡眠</div>
+        <div class="sum-val">${sleepDur()}</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">💓 血圧</div>
+        <div class="sum-val">${rec.bpSys&&rec.bpDia?`${rec.bpSys}/${rec.bpDia}`:'—'}</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">🍳 朝食</div>
+        <div class="sum-val" style="font-size:.8rem;">${mealEmoji(rec.breakfast)}</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">🍚 夕食</div>
+        <div class="sum-val" style="font-size:.8rem;">${mealEmoji(rec.dinner)}</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">🌙 就寝</div>
+        <div class="sum-val">${rec.sleep||'—'}</div>
+      </div>
+    </div>
+    ${rec.memo?`<div style="margin-top:.65rem;font-size:.8rem;color:var(--text-dk);
+      background:var(--pink-lt);border-radius:10px;padding:.5rem .7rem;border:1px solid var(--bdr);">
+      💬 ${rec.memo}</div>`:''}`;
+
+  // メッセージ
+  const msgs = [];
+  if (rec.breakfast === '完食') msgs.push('朝ごはんを全部食べてえらい！');
+  if (rec.dinner === '完食') msgs.push('夕ごはんも完食、すごい！');
+  if (rec.sleep && rec.wake) msgs.push(`${sleepDur()}もよく寝たね😴`);
+  document.getElementById('messageArea').textContent =
+    msgs.length ? msgs.join(' ') + ' 🌟' : '今日もよく頑張ったね！🌸';
+}
+
+// ══════════════════════════════════
+//  履歴タブ
+// ══════════════════════════════════
+function renderHistory() {
+  const logs = getLogs().slice().sort((a,b) => b.date.localeCompare(a.date));
+  if (!logs.length) {
+    document.getElementById('historyList').innerHTML = '<div class="empty">記録がありません</div>';
+    return;
+  }
+
+  const mealEmoji = v => v==='完食'?'😊':v==='少し残し'?'🙂':v==='ほぼ残し'?'😔':'—';
+
+  document.getElementById('historyList').innerHTML = logs.map(r => {
+    const dispDate = `${r.date}（${r.weekday||''}曜）`;
+    return `
+    <div class="rec-card" id="rcard_${r.id}" onclick="toggleCard(this)">
+      <div class="rec-hdr">
+        <span class="rec-date-lbl">📅 ${dispDate}</span>
+        <span style="font-size:.75rem;color:var(--text-lt);">
+          ${mealEmoji(r.breakfast)}朝 ${mealEmoji(r.dinner)}夕
+          ${r.bpSys?`💓${r.bpSys}/${r.bpDia}`:''}
+        </span>
+        <span class="rec-chevron">▼</span>
+      </div>
+      <div class="rec-body">
+        <div class="rec-row">
+          <span class="rec-key">🏫 学校</span><span class="rec-val">${r.school||'—'}</span>
+          <span class="rec-key">🌙 就寝</span><span class="rec-val">${r.sleep||'—'}</span>
+          <span class="rec-key">☀️ 起床</span><span class="rec-val">${r.wake||'—'}</span>
+        </div>
+        <div class="rec-row">
+          <span class="rec-key">💓 血圧</span>
+          <span class="rec-val">${r.bpSys&&r.bpDia?`${r.bpSys}/${r.bpDia} mmHg`:'—'}</span>
+        </div>
+        <div class="rec-row">
+          <span class="rec-key">🍳 朝食</span><span class="rec-val">${r.breakfast||'—'}</span>
+          ${r.breakfastMemo?`<span class="rec-key">メモ</span><span class="rec-val">${r.breakfastMemo}</span>`:''}
+        </div>
+        <div class="rec-row">
+          <span class="rec-key">🍚 夕食</span><span class="rec-val">${r.dinner||'—'}</span>
+        </div>
+        ${r.memo?`<div class="rec-row"><span class="rec-key">💬 様子</span><span class="rec-val">${r.memo}</span></div>`:''}
+        <div class="rec-actions">
+          <button class="rec-edit-btn" onclick="event.stopPropagation();editRecord(${r.id})">✏️ 編集</button>
+          <button class="rec-del-btn" onclick="event.stopPropagation();deleteRecord(${r.id})">🗑️ 削除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(card) { card.classList.toggle('open'); }
+
+function editRecord(id) {
+  const rec = getLogs().find(r => r.id === id);
+  if (!rec) return;
+  editingId = id;
+
+  document.getElementById('fDate').value = rec.date;
+  document.getElementById('fSleep').value = rec.sleep||'';
+  document.getElementById('fWake').value = rec.wake||'';
+  document.getElementById('fBpSys').value = rec.bpSys||'';
+  document.getElementById('fBpDia').value = rec.bpDia||'';
+  document.getElementById('fBreakfastMemo').value = rec.breakfastMemo||'';
+  document.getElementById('fMemo').value = rec.memo||'';
+
+  ['school','breakfast','dinner'].forEach(group => {
+    const val = rec[group];
+    if (!val) return;
+    selections[group] = val;
+    const chips = document.querySelectorAll(`#${group}Chips .chip`);
+    chips.forEach(c => {
+      c.classList.remove('active');
+      if (c.textContent.trim().startsWith(val)) c.classList.add('active');
+    });
+  });
+
+  // 記録タブへ
+  document.querySelectorAll('.tab-btn')[1].click();
+  window.scrollTo(0,0);
+}
+
+function deleteRecord(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  saveLogs(getLogs().filter(r => r.id !== id));
+  renderHistory();
+}
+
+// ══════════════════════════════════
+//  グラフ
+// ══════════════════════════════════
+function renderGraphs() {
+  const logs = getLogs().slice().sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
+  const labels = logs.map(r => r.date.slice(5));
+
+  // 血圧グラフ
+  if (bpChartInst) bpChartInst.destroy();
+  bpChartInst = new Chart(document.getElementById('bpChart'), {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        { label:'収縮期', data:logs.map(r=>r.bpSys||null),
+          borderColor:'#f06292', backgroundColor:'rgba(240,98,146,.1)',
+          tension:.3, pointRadius:4 },
+        { label:'拡張期', data:logs.map(r=>r.bpDia||null),
+          borderColor:'#ce93d8', backgroundColor:'rgba(206,147,216,.1)',
+          tension:.3, pointRadius:4 },
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:10}}}},
+      scales:{y:{beginAtZero:false}}}
+  });
+
+  // 食事グラフ
+  const mealScore = v => v==='完食'?3:v==='少し残し'?2:v==='ほぼ残し'?1:0;
+  if (mealChartInst) mealChartInst.destroy();
+  mealChartInst = new Chart(document.getElementById('mealChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { label:'朝食', data:logs.map(r=>mealScore(r.breakfast)),
+          backgroundColor:'rgba(255,183,77,.7)', borderRadius:6 },
+        { label:'夕食', data:logs.map(r=>mealScore(r.dinner)),
+          backgroundColor:'rgba(240,98,146,.6)', borderRadius:6 },
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:10}}}},
+      scales:{y:{min:0,max:3,ticks:{
+        callback:v=>['','ほぼ残し','少し残し','完食'][v]||''
+      }}}}
+  });
+}
+
+// ══════════════════════════════════
+//  起動
+// ══════════════════════════════════
+init();
+</script>
+</body>
+</html>
