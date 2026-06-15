@@ -145,6 +145,17 @@ main{padding:.85rem;max-width:600px;margin:0 auto;}
 /* ── empty ── */
 .empty{text-align:center;padding:2rem 1rem;color:var(--text-lt);font-size:.85rem;}
 
+/* 症状チップ（複数選択） */
+.symptom-chip{border:1.5px solid var(--bdr);border-radius:20px;padding:.25rem .65rem;
+  font-size:.75rem;font-weight:700;color:var(--text-lt);cursor:pointer;
+  background:#fff;transition:all .12s;user-select:none;white-space:nowrap;}
+.symptom-chip.active{border-color:#e53935;background:#ffebee;color:#c62828;}
+.symptom-chip.good.active{border-color:#43a047;background:#e8f5e9;color:#2e7d32;}
+/* 自動入力ボタン */
+.auto-btn{font-size:.68rem;background:rgba(244,143,177,.15);border:1.5px solid var(--bdr);
+  border-radius:8px;padding:.2rem .5rem;cursor:pointer;color:var(--text-md);
+  white-space:nowrap;font-weight:700;}
+
 /* ── モーダル ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);
                z-index:100;overflow-y:auto;padding:1rem;}
@@ -165,7 +176,32 @@ main{padding:.85rem;max-width:600px;margin:0 auto;}
     <div class="hdr-sub">毎日の体調を記録しよう</div>
   </div>
   <div class="hdr-date" id="hdrDate"></div>
+  <button onclick="openSettings()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;
+    width:2.2rem;height:2.2rem;font-size:1.1rem;cursor:pointer;flex-shrink:0;">⚙️</button>
 </header>
+
+<!-- ══ 設定オーバーレイ ══ -->
+<div id="settingsOverlay" onclick="closeSettingsIfBg(event)"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
+            align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;border-radius:20px 20px 0 0;padding:1.5rem 1rem 2rem;
+              width:100%;max-width:480px;">
+    <div style="font-size:1rem;font-weight:800;color:var(--text-dk);margin-bottom:1rem;">⚙️ 設定</div>
+    <div style="font-size:.78rem;font-weight:700;color:var(--text-md);margin-bottom:.35rem;">
+      🔗 Google Sheets Webhook URL
+    </div>
+    <input id="setWebhook" type="url" placeholder="https://script.google.com/macros/s/..."
+           style="width:100%;border:1.5px solid var(--bdr);border-radius:10px;
+                  padding:.5rem .7rem;font-size:.75rem;font-family:inherit;margin-bottom:.3rem;">
+    <div style="font-size:.68rem;color:var(--text-lt);margin-bottom:1rem;">
+      設定するとスプレッドシートにも自動保存されます
+    </div>
+    <button onclick="saveSettings()"
+            style="width:100%;background:linear-gradient(135deg,#f06292,#ce93d8);
+                   color:#fff;border:none;border-radius:12px;padding:.65rem;
+                   font-size:.9rem;font-weight:700;cursor:pointer;">保存</button>
+  </div>
+</div>
 
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('today',this)">🌟 今日</button>
@@ -208,17 +244,30 @@ main{padding:.85rem;max-width:600px;margin:0 auto;}
     <!-- 日付 -->
     <div class="form-row">
       <span class="form-label">📅 日付</span>
-      <input class="form-input" type="date" id="fDate">
+      <input class="form-input" type="date" id="fDate" oninput="updateWeekday()">
+      <span id="fWeekday" style="font-size:.8rem;font-weight:700;color:var(--text-lt);"></span>
     </div>
 
-    <!-- 学校 -->
+    <!-- 天気 -->
     <div class="form-row">
-      <span class="form-label">🏫 学校</span>
-      <div class="chip-group" id="schoolChips">
-        <span class="chip" onclick="selectChip(this,'school','あり')">あり</span>
-        <span class="chip" onclick="selectChip(this,'school','なし')">なし</span>
-        <span class="chip" onclick="selectChip(this,'school','半日')">半日</span>
+      <span class="form-label">🌤️ 天気</span>
+      <div class="chip-group" id="weatherChips">
+        <span class="chip" onclick="selectChip(this,'weather','晴れ')">☀️ 晴れ</span>
+        <span class="chip" onclick="selectChip(this,'weather','曇り')">☁️ 曇り</span>
+        <span class="chip" onclick="selectChip(this,'weather','雨')">🌧️ 雨</span>
+        <span class="chip" onclick="selectChip(this,'weather','雪')">❄️ 雪</span>
       </div>
+    </div>
+
+    <!-- 気温・湿度 -->
+    <div class="form-row">
+      <span class="form-label">🌡️ 気温</span>
+      <input class="form-input" type="number" id="fTemp" placeholder="気温" style="max-width:5.5rem;">
+      <span style="font-size:.75rem;color:var(--text-lt);">℃</span>
+      <span class="form-label" style="min-width:4rem;">💧 湿度</span>
+      <input class="form-input" type="number" id="fHumidity" placeholder="湿度" style="max-width:5.5rem;">
+      <span style="font-size:.75rem;color:var(--text-lt);">%</span>
+      <button class="auto-btn" onclick="autoFillWeather()">自動入力</button>
     </div>
 
     <!-- 就寝・起床 -->
@@ -238,6 +287,31 @@ main{padding:.85rem;max-width:600px;margin:0 auto;}
       <span style="font-size:.75rem;color:var(--text-lt);">mmHg</span>
     </div>
 
+    <!-- 心拍数 -->
+    <div class="form-row">
+      <span class="form-label">💗 心拍数</span>
+      <input class="form-input" type="number" id="fHeartRate" placeholder="心拍数" style="max-width:6rem;">
+      <span style="font-size:.75rem;color:var(--text-lt);">bpm</span>
+    </div>
+
+    <!-- 体温 -->
+    <div class="form-row">
+      <span class="form-label">🤒 体温</span>
+      <input class="form-input" type="number" step="0.1" id="fBodyTemp" placeholder="例: 36.5" style="max-width:7rem;">
+      <span style="font-size:.75rem;color:var(--text-lt);">℃</span>
+    </div>
+
+    <!-- 寝起き -->
+    <div class="form-row">
+      <span class="form-label">😴 寝起き</span>
+      <div class="chip-group" id="wakeConditionChips">
+        <span class="chip good" onclick="selectChip(this,'wakeCondition','よい')">よい</span>
+        <span class="chip"      onclick="selectChip(this,'wakeCondition','少しよい')">少しよい</span>
+        <span class="chip mid"  onclick="selectChip(this,'wakeCondition','少しわるい')">少しわるい</span>
+        <span class="chip bad"  onclick="selectChip(this,'wakeCondition','わるい')">わるい</span>
+      </div>
+    </div>
+
     <!-- 朝食 -->
     <div class="form-row">
       <span class="form-label">🍳 朝食</span>
@@ -248,10 +322,27 @@ main{padding:.85rem;max-width:600px;margin:0 auto;}
       </div>
     </div>
 
-    <!-- 朝食メモ -->
-    <div class="form-row" style="align-items:flex-start;">
-      <span class="form-label">🥣 朝食メモ</span>
-      <textarea class="form-textarea" id="fBreakfastMemo" placeholder="例：ごはん、みそ汁、卵焼き…"></textarea>
+    <!-- 登校 -->
+    <div class="form-row">
+      <span class="form-label">🏫 登校</span>
+      <div class="chip-group" id="schoolChips">
+        <span class="chip good" onclick="selectChip(this,'school','元気')">元気</span>
+        <span class="chip"      onclick="selectChip(this,'school','自力')">自力</span>
+        <span class="chip mid"  onclick="selectChip(this,'school','補助')">補助</span>
+        <span class="chip mid"  onclick="selectChip(this,'school','遅刻')">遅刻</span>
+        <span class="chip bad"  onclick="selectChip(this,'school','欠席')">欠席</span>
+      </div>
+    </div>
+
+    <!-- 下校後 -->
+    <div class="form-row">
+      <span class="form-label">🏠 下校後</span>
+      <div class="chip-group" id="afterSchoolChips">
+        <span class="chip good" onclick="selectChip(this,'afterSchool','よい')">よい</span>
+        <span class="chip"      onclick="selectChip(this,'afterSchool','少しよい')">少しよい</span>
+        <span class="chip mid"  onclick="selectChip(this,'afterSchool','少しわるい')">少しわるい</span>
+        <span class="chip bad"  onclick="selectChip(this,'afterSchool','わるい')">わるい</span>
+      </div>
     </div>
 
     <!-- 夕食 -->
@@ -264,7 +355,26 @@ main{padding:.85rem;max-width:600px;margin:0 auto;}
       </div>
     </div>
 
-    <!-- 本人の様子 -->
+    <!-- 体調メモ（複数選択） -->
+    <div class="form-row" style="align-items:flex-start;">
+      <span class="form-label">🩺 体調</span>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;flex:1;">
+        <span class="symptom-chip good" onclick="toggleSymptom(this,'元気')">元気</span>
+        <span class="symptom-chip" onclick="toggleSymptom(this,'気持ち悪い')">気持ち悪い</span>
+        <span class="symptom-chip" onclick="toggleSymptom(this,'頭痛')">頭痛</span>
+        <span class="symptom-chip" onclick="toggleSymptom(this,'腹痛')">腹痛</span>
+        <span class="symptom-chip" onclick="toggleSymptom(this,'眠気')">眠気</span>
+        <span class="symptom-chip" onclick="toggleSymptom(this,'だるさ')">だるさ</span>
+        <span class="symptom-chip" onclick="toggleSymptom(this,'発熱')">発熱</span>
+      </div>
+    </div>
+    <div class="form-row" id="feverRow" style="display:none;">
+      <span class="form-label">🌡️ 発熱</span>
+      <input class="form-input" type="number" step="0.1" id="fFeverTemp" placeholder="例: 38.5" style="max-width:7rem;">
+      <span style="font-size:.75rem;color:var(--text-lt);">℃</span>
+    </div>
+
+    <!-- 様子メモ -->
     <div class="form-row" style="align-items:flex-start;">
       <span class="form-label">💬 様子メモ</span>
       <textarea class="form-textarea" id="fMemo" placeholder="例：元気だった、少し頭痛あり、機嫌よかった…"></textarea>
@@ -300,8 +410,27 @@ main{padding:.85rem;max-width:600px;margin:0 auto;}
 // ══════════════════════════════════
 //  定数・状態
 // ══════════════════════════════════
-const STORAGE_KEY = 'wachan_health_log';
-const WEBHOOK_URL = ''; // 後でGoogle Apps Script URLを入れる
+const STORAGE_KEY    = 'wachan_health_log';
+const SETTINGS_KEY   = 'wachan_settings';
+const LAT = 35.7357, LON = 139.6518; // 練馬区
+let weatherCache = {}; // 自動入力用キャッシュ
+
+function getSettings() { return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}'); }
+function openSettings() {
+  document.getElementById('setWebhook').value = getSettings().webhook || '';
+  document.getElementById('settingsOverlay').style.display = 'flex';
+}
+function saveSettings() {
+  const s = getSettings();
+  s.webhook = document.getElementById('setWebhook').value.trim();
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  document.getElementById('settingsOverlay').style.display = 'none';
+  alert('設定を保存しました！');
+}
+function closeSettingsIfBg(e) {
+  if (e.target === document.getElementById('settingsOverlay'))
+    document.getElementById('settingsOverlay').style.display = 'none';
+}
 
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 
@@ -311,7 +440,11 @@ let bpChartInst = null;
 let mealChartInst = null;
 
 // 選択状態
-const selections = { school:'', breakfast:'', dinner:'' };
+const selections = {
+  weather:'', wakeCondition:'', breakfast:'',
+  school:'', afterSchool:'', dinner:'',
+  symptoms: new Set()
+};
 
 // ══════════════════════════════════
 //  初期化
@@ -326,6 +459,7 @@ function init() {
 
   // フォーム日付デフォルト
   document.getElementById('fDate').value = fmt(now);
+  updateWeekday();
 
   loadWeather();
   renderToday();
@@ -344,6 +478,7 @@ function switchTab(tab, btn) {
   if (tab === 'history') renderHistory();
   if (tab === 'graph')   renderGraphs();
   if (tab === 'today')   renderToday();
+  if (tab === 'record')  updateWeekday();
 }
 
 // ══════════════════════════════════
@@ -389,6 +524,17 @@ async function loadWeather() {
                     popTs?.areas[0];
     const pop = popArea?.pops?.[0] || '—';
 
+    // キャッシュに保存（自動入力用）
+    weatherCache = { icon, desc, tMin, tMax };
+
+    // Open-Meteo で現在の気温・湿度取得
+    try {
+      const omRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m&timezone=Asia%2FTokyo`);
+      const omData = await omRes.json();
+      weatherCache.temp     = Math.round(omData.current.temperature_2m);
+      weatherCache.humidity = omData.current.relative_humidity_2m;
+    } catch(_) {}
+
     document.getElementById('weatherDisplay').innerHTML = `
       <div class="weather-row">
         <div class="weather-icon">${icon}</div>
@@ -407,6 +553,29 @@ async function loadWeather() {
   }
 }
 
+// 天気・気温・湿度を自動入力
+function autoFillWeather() {
+  if (!weatherCache.desc) { alert('天気データを読み込み中です。少し待ってから試してください。'); return; }
+  const descMap = {'晴れ':'晴れ','快晴':'晴れ','晴':'晴れ','曇':'曇り','くもり':'曇り','雨':'雨','雪':'雪'};
+  const wKey = Object.keys(descMap).find(k => weatherCache.desc.includes(k)) || '';
+  const wVal = descMap[wKey] || '';
+  if (wVal) {
+    document.querySelectorAll('#weatherChips .chip').forEach(c => {
+      c.classList.remove('active');
+      if (c.textContent.includes(wVal)) { c.classList.add('active'); selections.weather = wVal; }
+    });
+  }
+  if (weatherCache.temp != null)     document.getElementById('fTemp').value     = weatherCache.temp;
+  if (weatherCache.humidity != null) document.getElementById('fHumidity').value = weatherCache.humidity;
+}
+
+// 曜日表示更新
+function updateWeekday() {
+  const d = document.getElementById('fDate').value;
+  if (!d) return;
+  document.getElementById('fWeekday').textContent = WEEKDAYS[new Date(d.replace(/-/g,'/')).getDay()] + '曜日';
+}
+
 // ══════════════════════════════════
 //  チップ選択
 // ══════════════════════════════════
@@ -417,6 +586,17 @@ function selectChip(el, group, val) {
   selections[group] = val;
 }
 
+function toggleSymptom(el, symptom) {
+  el.classList.toggle('active');
+  if (el.classList.contains('active')) {
+    selections.symptoms.add(symptom);
+    if (symptom === '発熱') document.getElementById('feverRow').style.display = 'flex';
+  } else {
+    selections.symptoms.delete(symptom);
+    if (symptom === '発熱') document.getElementById('feverRow').style.display = 'none';
+  }
+}
+
 // ══════════════════════════════════
 //  記録保存
 // ══════════════════════════════════
@@ -425,19 +605,27 @@ async function submitRecord() {
   if (!date) { alert('日付を入力してください'); return; }
 
   const rec = {
-    id:       editingId || Date.now(),
+    id:            editingId || Date.now(),
     date,
-    weekday:  WEEKDAYS[new Date(date.replace(/-/g,'/')).getDay()],
-    school:   selections.school,
-    sleep:    document.getElementById('fSleep').value,
-    wake:     document.getElementById('fWake').value,
-    bpSys:    document.getElementById('fBpSys').value,
-    bpDia:    document.getElementById('fBpDia').value,
+    weekday:       WEEKDAYS[new Date(date.replace(/-/g,'/')).getDay()],
+    weather:       selections.weather,
+    temp:          document.getElementById('fTemp').value,
+    humidity:      document.getElementById('fHumidity').value,
+    sleep:         document.getElementById('fSleep').value,
+    wake:          document.getElementById('fWake').value,
+    bpSys:         document.getElementById('fBpSys').value,
+    bpDia:         document.getElementById('fBpDia').value,
+    heartRate:     document.getElementById('fHeartRate').value,
+    bodyTemp:      document.getElementById('fBodyTemp').value,
+    wakeCondition: selections.wakeCondition,
     breakfast:     selections.breakfast,
-    breakfastMemo: document.getElementById('fBreakfastMemo').value.trim(),
-    dinner:   selections.dinner,
-    memo:     document.getElementById('fMemo').value.trim(),
-    savedAt:  new Date().toISOString(),
+    school:        selections.school,
+    afterSchool:   selections.afterSchool,
+    dinner:        selections.dinner,
+    symptoms:      [...selections.symptoms],
+    feverTemp:     document.getElementById('fFeverTemp').value,
+    memo:          document.getElementById('fMemo').value.trim(),
+    savedAt:       new Date().toISOString(),
   };
 
   // ローカル保存
@@ -452,9 +640,10 @@ async function submitRecord() {
   editingId = null;
 
   // Webhook送信
-  if (WEBHOOK_URL) {
+  const webhookUrl = getSettings().webhook;
+  if (webhookUrl) {
     try {
-      await fetch(WEBHOOK_URL, {
+      await fetch(webhookUrl, {
         method:'POST', mode:'no-cors',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(rec)
@@ -472,13 +661,20 @@ async function submitRecord() {
 
 function resetForm() {
   document.getElementById('fDate').value = fmt(new Date());
-  ['fSleep','fWake','fBpSys','fBpDia','fBreakfastMemo','fMemo'].forEach(id => {
+  updateWeekday();
+  ['fTemp','fHumidity','fSleep','fWake','fBpSys','fBpDia',
+   'fHeartRate','fBodyTemp','fFeverTemp','fMemo'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  ['schoolChips','breakfastChips','dinnerChips'].forEach(id => {
+  ['weatherChips','wakeConditionChips','breakfastChips',
+   'schoolChips','afterSchoolChips','dinnerChips'].forEach(id => {
     document.getElementById(id).querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   });
-  Object.keys(selections).forEach(k => selections[k] = '');
+  document.querySelectorAll('.symptom-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('feverRow').style.display = 'none';
+  selections.weather = ''; selections.wakeCondition = ''; selections.breakfast = '';
+  selections.school  = ''; selections.afterSchool   = ''; selections.dinner    = '';
+  selections.symptoms = new Set();
 }
 
 // ══════════════════════════════════
@@ -515,8 +711,8 @@ function renderToday() {
   document.getElementById('todaySummary').innerHTML = `
     <div class="summary-grid">
       <div class="sum-item">
-        <div class="sum-lbl">🏫 学校</div>
-        <div class="sum-val">${rec.school||'—'}</div>
+        <div class="sum-lbl">🌤️ 天気</div>
+        <div class="sum-val" style="font-size:.85rem;">${rec.weather||'—'}${rec.temp?` ${rec.temp}℃`:''}</div>
       </div>
       <div class="sum-item">
         <div class="sum-lbl">😴 睡眠</div>
@@ -524,7 +720,11 @@ function renderToday() {
       </div>
       <div class="sum-item">
         <div class="sum-lbl">💓 血圧</div>
-        <div class="sum-val">${rec.bpSys&&rec.bpDia?`${rec.bpSys}/${rec.bpDia}`:'—'}</div>
+        <div class="sum-val" style="font-size:.85rem;">${rec.bpSys&&rec.bpDia?`${rec.bpSys}/${rec.bpDia}`:'—'}</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">🤒 体温</div>
+        <div class="sum-val">${rec.bodyTemp?rec.bodyTemp+'℃':'—'}</div>
       </div>
       <div class="sum-item">
         <div class="sum-lbl">🍳 朝食</div>
@@ -535,8 +735,12 @@ function renderToday() {
         <div class="sum-val" style="font-size:.8rem;">${mealEmoji(rec.dinner)}</div>
       </div>
       <div class="sum-item">
-        <div class="sum-lbl">🌙 就寝</div>
-        <div class="sum-val">${rec.sleep||'—'}</div>
+        <div class="sum-lbl">🏫 登校</div>
+        <div class="sum-val" style="font-size:.85rem;">${rec.school||'—'}</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-lbl">🩺 体調</div>
+        <div class="sum-val" style="font-size:.75rem;">${rec.symptoms?.length?rec.symptoms.join('・'):'—'}</div>
       </div>
     </div>
     ${rec.memo?`<div style="margin-top:.65rem;font-size:.8rem;color:var(--text-dk);
@@ -547,6 +751,8 @@ function renderToday() {
   const msgs = [];
   if (rec.breakfast === '完食') msgs.push('朝ごはんを全部食べてえらい！');
   if (rec.dinner === '完食') msgs.push('夕ごはんも完食、すごい！');
+  if (rec.wakeCondition === 'よい') msgs.push('寝起きもよかったね！');
+  if (rec.school === '元気') msgs.push('元気に登校できてえらい！');
   if (rec.sleep && rec.wake) msgs.push(`${sleepDur()}もよく寝たね😴`);
   document.getElementById('messageArea').textContent =
     msgs.length ? msgs.join(' ') + ' 🌟' : '今日もよく頑張ったね！🌸';
@@ -571,28 +777,34 @@ function renderHistory() {
       <div class="rec-hdr">
         <span class="rec-date-lbl">📅 ${dispDate}</span>
         <span style="font-size:.75rem;color:var(--text-lt);">
-          ${mealEmoji(r.breakfast)}朝 ${mealEmoji(r.dinner)}夕
+          ${r.weather||''} ${r.bodyTemp?r.bodyTemp+'℃':''}
           ${r.bpSys?`💓${r.bpSys}/${r.bpDia}`:''}
         </span>
         <span class="rec-chevron">▼</span>
       </div>
       <div class="rec-body">
         <div class="rec-row">
-          <span class="rec-key">🏫 学校</span><span class="rec-val">${r.school||'—'}</span>
-          <span class="rec-key">🌙 就寝</span><span class="rec-val">${r.sleep||'—'}</span>
-          <span class="rec-key">☀️ 起床</span><span class="rec-val">${r.wake||'—'}</span>
+          <span class="rec-key">🌤️ 天気</span><span class="rec-val">${r.weather||'—'} ${r.temp?r.temp+'℃':''} ${r.humidity?r.humidity+'%':''}</span>
         </div>
         <div class="rec-row">
-          <span class="rec-key">💓 血圧</span>
-          <span class="rec-val">${r.bpSys&&r.bpDia?`${r.bpSys}/${r.bpDia} mmHg`:'—'}</span>
+          <span class="rec-key">🌙 就寝</span><span class="rec-val">${r.sleep||'—'}</span>
+          <span class="rec-key">☀️ 起床</span><span class="rec-val">${r.wake||'—'}</span>
+          <span class="rec-key">😴 寝起き</span><span class="rec-val">${r.wakeCondition||'—'}</span>
+        </div>
+        <div class="rec-row">
+          <span class="rec-key">💓 血圧</span><span class="rec-val">${r.bpSys&&r.bpDia?`${r.bpSys}/${r.bpDia} mmHg`:'—'}</span>
+          <span class="rec-key">💗 心拍</span><span class="rec-val">${r.heartRate?r.heartRate+'bpm':'—'}</span>
+          <span class="rec-key">🤒 体温</span><span class="rec-val">${r.bodyTemp?r.bodyTemp+'℃':'—'}</span>
         </div>
         <div class="rec-row">
           <span class="rec-key">🍳 朝食</span><span class="rec-val">${r.breakfast||'—'}</span>
-          ${r.breakfastMemo?`<span class="rec-key">メモ</span><span class="rec-val">${r.breakfastMemo}</span>`:''}
+          <span class="rec-key">🏫 登校</span><span class="rec-val">${r.school||'—'}</span>
+          <span class="rec-key">🏠 下校後</span><span class="rec-val">${r.afterSchool||'—'}</span>
         </div>
         <div class="rec-row">
           <span class="rec-key">🍚 夕食</span><span class="rec-val">${r.dinner||'—'}</span>
         </div>
+        ${r.symptoms?.length?`<div class="rec-row"><span class="rec-key">🩺 体調</span><span class="rec-val">${r.symptoms.join('・')}${r.feverTemp?' ('+r.feverTemp+'℃)':''}</span></div>`:''}
         ${r.memo?`<div class="rec-row"><span class="rec-key">💬 様子</span><span class="rec-val">${r.memo}</span></div>`:''}
         <div class="rec-actions">
           <button class="rec-edit-btn" onclick="event.stopPropagation();editRecord(${r.id})">✏️ 編集</button>
@@ -609,27 +821,42 @@ function editRecord(id) {
   const rec = getLogs().find(r => r.id === id);
   if (!rec) return;
   editingId = id;
+  resetForm();
 
-  document.getElementById('fDate').value = rec.date;
-  document.getElementById('fSleep').value = rec.sleep||'';
-  document.getElementById('fWake').value = rec.wake||'';
-  document.getElementById('fBpSys').value = rec.bpSys||'';
-  document.getElementById('fBpDia').value = rec.bpDia||'';
-  document.getElementById('fBreakfastMemo').value = rec.breakfastMemo||'';
-  document.getElementById('fMemo').value = rec.memo||'';
+  document.getElementById('fDate').value      = rec.date;
+  document.getElementById('fTemp').value      = rec.temp||'';
+  document.getElementById('fHumidity').value  = rec.humidity||'';
+  document.getElementById('fSleep').value     = rec.sleep||'';
+  document.getElementById('fWake').value      = rec.wake||'';
+  document.getElementById('fBpSys').value     = rec.bpSys||'';
+  document.getElementById('fBpDia').value     = rec.bpDia||'';
+  document.getElementById('fHeartRate').value = rec.heartRate||'';
+  document.getElementById('fBodyTemp').value  = rec.bodyTemp||'';
+  document.getElementById('fFeverTemp').value = rec.feverTemp||'';
+  document.getElementById('fMemo').value      = rec.memo||'';
+  updateWeekday();
 
-  ['school','breakfast','dinner'].forEach(group => {
+  // チップ（単一選択）
+  ['weather','wakeCondition','breakfast','school','afterSchool','dinner'].forEach(group => {
     const val = rec[group];
     if (!val) return;
     selections[group] = val;
     const chips = document.querySelectorAll(`#${group}Chips .chip`);
     chips.forEach(c => {
       c.classList.remove('active');
-      if (c.textContent.trim().startsWith(val)) c.classList.add('active');
+      if (c.textContent.trim().includes(val)) c.classList.add('active');
     });
   });
 
-  // 記録タブへ
+  // 症状チップ（複数選択）
+  if (rec.symptoms?.length) {
+    selections.symptoms = new Set(rec.symptoms);
+    document.querySelectorAll('.symptom-chip').forEach(c => {
+      if (rec.symptoms.includes(c.textContent.trim())) c.classList.add('active');
+    });
+    if (rec.symptoms.includes('発熱')) document.getElementById('feverRow').style.display = 'flex';
+  }
+
   document.querySelectorAll('.tab-btn')[1].click();
   window.scrollTo(0,0);
 }
